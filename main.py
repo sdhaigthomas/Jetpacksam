@@ -102,7 +102,10 @@ jps = {"on":{
 # Main game loop
 clock = pygame.time.Clock()
 
-
+def astroidtoscore(points):
+    points = 50 - points
+    if points <= 15: points = 15
+    return points
 
     
 while True:
@@ -130,11 +133,14 @@ while True:
     
     # Spawn astroids every 15 frames
     astroidFrameCheck += 1
-    if astroidFrameCheck == 15:
+    if astroidFrameCheck == astroidtoscore(score):
+       
         if randint(1,2) == 1:
             astroid = Astroid()
             astroid.setup(HEIGHT,WIDTH)
             astroids.append(astroid)
+        astroidFrameCheck = 0
+    if astroidFrameCheck >= 100:
         astroidFrameCheck = 0
 
 
@@ -178,7 +184,7 @@ while True:
         falling = False
         player_v = 0
 
-    if falling:
+    if falling and player_y <= 600:
         player_y += player_v
         player_v += fall_speed
         if player_y <= 0:
