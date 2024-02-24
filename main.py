@@ -9,11 +9,13 @@ pygame.init()
 
 
 scorefont = pygame.font.Font('static/font.ttf', 72)
+youDied = pygame.font.Font('static/font.ttf', 72)
 
 #  Load images
 deathscreen = pygame.image.load("static/deathmsg.png")
 pygame_icon = pygame.image.load('static/jpsonnosway1.png')
 playagain = pygame.image.load("static/playagain.png")
+
 pygame.display.set_icon(pygame_icon)
 
 # Constants
@@ -57,8 +59,8 @@ can_rotate = 0
 
 
 bg = pygame.image.load("static/background.png")
-
-playagainrec = playagain.get_rect(center=(WIDTH/2, HEIGHT/2 + 30))
+playagain = pygame.transform.scale(playagain, (70,70))
+playagainrec = playagain.get_rect(center=(WIDTH/2, HEIGHT/2 + 50))
 
 
 # load sound
@@ -66,6 +68,7 @@ jetpackblast = pygame.mixer.Sound("static/jetpack3.wav")
 powerup = pygame.mixer.Sound("static/powerup3.wav")
 deathsound = pygame.mixer.Sound("static/death.wav")
 bonk = pygame.mixer.Sound("static/bonk2.wav")
+lowFuelBeep = pygame.mixer.Sound("static/low_fuel.wav")
 
 #player setup
 dead = False
@@ -109,6 +112,7 @@ def astroidtoscore(points):
     return points
 
 scorepersecond = round(1/FPS, 2)
+lowFuelBeepTimer = 0
 
 while True:
     for event in pygame.event.get():
@@ -118,6 +122,11 @@ while True:
 
 
     if not dead: score = round(score + scorepersecond, 2)
+
+    lowFuelBeepTimer += 1
+    if lowFuelBeepTimer == FPS: 
+        lowFuelBeepTimer = 0
+        if fuel < 2: pygame.mixer.Sound.play(lowFuelBeep)
 
     def DrawBar(pos, size, borderC, barC, progress):
 
@@ -178,9 +187,10 @@ while True:
             
             pygame.mixer.Sound.play(jetpackblast)
             on = "on"
-            if player_v > -5: player_v += -1
-            fuel -= 10/FPS
-            print(player_v)
+            if player_v > -5: 
+                player_v += -1
+                fuel -= 10/FPS
+            else:fuel -= 2/FPS
         
     # Update game logic here
     falling = True
@@ -203,7 +213,7 @@ while True:
         can_x, can_y = randint(100, 600), randint(100, 500)
         CAN_SPEED = randint(3,5) * -1
         pygame.mixer.Sound.play(powerup)
-        score += 1
+        score = round(score + 1, 2)
         fuel = 10
     
     # Draw everything
@@ -236,7 +246,8 @@ while True:
                 pygame.mixer.Sound.play(deathsound)
             dead = True
     if dead:
-        screen.blit(pygame.transform.scale(deathscreen, (300, 300)), deathscreen.get_rect(center=(WIDTH/2 - 100, HEIGHT/2 - 100)))
+        #screen.blit(pygame.transform.scale(deathscreen, (300, 300)), deathscreen.get_rect(center=(WIDTH/2 - 100, HEIGHT/2 - 100)))
+        screen.blit(youDied.render("You died!", True, (255,255,255)), deathscreen.get_rect(center=(WIDTH/2 - 100, HEIGHT/2 )))
         screen.blit(playagain, playagainrec)
   
     
