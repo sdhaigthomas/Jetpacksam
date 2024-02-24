@@ -69,6 +69,7 @@ bonk = pygame.mixer.Sound("static/bonk2.wav")
 
 #player setup
 dead = False
+fuel = 10
 player_size = 60
 player_x = 0
 player_y = 0
@@ -107,12 +108,16 @@ def astroidtoscore(points):
     if points <= 15: points = 15
     return points
 
-    
+scorepersecond = round(1/FPS, 2)
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+
+
+    if not dead: score = round(score + scorepersecond, 2)
 
     def DrawBar(pos, size, borderC, barC, progress):
 
@@ -121,7 +126,6 @@ while True:
         innerSize = ((size[0]-6) * progress, size[1]-6)
         pygame.draw.rect(screen, barC, (*innerPos, *innerSize))
 
-    DrawBar((0,0), (200,10), (0, 0, 0) ,(0, 0, 0) ,50)
 
     if dead and playagainrec.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
         player_x = 0
@@ -129,11 +133,12 @@ while True:
         astroids.clear()
         score = 0
         dead = False
+        fuel = 10
         pygame.mixer.Sound.play(powerup)
     
     # Spawn astroids every 15 frames
     astroidFrameCheck += 1
-    if astroidFrameCheck == astroidtoscore(score):
+    if astroidFrameCheck == astroidtoscore(round(score)):
        
         if randint(1,2) == 1:
             astroid = Astroid()
@@ -165,7 +170,6 @@ while True:
         if keys[pygame.K_RIGHT] and player_x < WIDTH - player_size:
             player_x += player_speed
             if not flipped:
-                
                 flipped = True
             sway = "sway"
 
@@ -174,9 +178,10 @@ while True:
             
             pygame.mixer.Sound.play(jetpackblast)
             on = "on"
-            player_v = -5
-            
-
+            if player_v > -5: player_v += -1
+            fuel -= 10/FPS
+            print(player_v)
+        
     # Update game logic here
     falling = True
 
@@ -191,14 +196,15 @@ while True:
             player_y -= player_v -1
             player_v = player_v/2 * -1
 
+    if fuel < 0:
+        dead = True
     
     if playerhb.colliderect(canhb):
         can_x, can_y = randint(100, 600), randint(100, 500)
         CAN_SPEED = randint(3,5) * -1
         pygame.mixer.Sound.play(powerup)
         score += 1
-        #can = pygame.transform.rotate(can, randint(0, 360))
-
+        fuel = 10
     
     # Draw everything
 
@@ -209,10 +215,15 @@ while True:
     if flipped == True: jpstf = pygame.transform.flip(jpstf, True ,False)
 
     # blit all surfaces
+    ratio = fuel / 10
+    
     screen.blit(bg, (0, 0))
+    pygame.draw.rect(screen, (255, 0, 0), (WIDTH-150, 60, 100, 16))
+    pygame.draw.rect(screen, (0, 255, 0), (WIDTH-150, 60, 100 * ratio, 16))
+    screen.blit(scorefont.render(str(score), True, (255,255,255)), (60, 40))
     screen.blit(can, (can_x, can_y, can_size, can_size))
     screen.blit(jpstf, (player_x, player_y, player_size, player_size))
-    screen.blit(scorefont.render(str(score), True, (255,255,255)), (WIDTH/2, 40))
+    
 
     for astroid in astroids:
         astroid.x += -4
