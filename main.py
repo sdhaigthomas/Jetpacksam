@@ -8,8 +8,9 @@ from multiprocessing import Process
 pygame.init()
 
 
-scorefont = pygame.font.Font('static/font.ttf', 72)
+scorefont = pygame.font.Font('static/font.ttf', 40)
 youDied = pygame.font.Font('static/font.ttf', 72)
+lowFuelText = pygame.font.Font('static/font.ttf', 72)
 
 #  Load images
 deathscreen = pygame.image.load("static/deathmsg.png")
@@ -79,6 +80,7 @@ player_y = 0
 playerhb = pygame.Rect(player_x, player_y, player_size, player_size)
 player_speed = 5
 player_v = 0
+player_x_v = 0
 fall_speed = 0.1
 flipped = True
 on = "on"
@@ -114,19 +116,31 @@ def astroidtoscore(points):
 scorepersecond = round(1/FPS, 2)
 lowFuelBeepTimer = 0
 
+idleTimer = 0
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
-
+    # prevnt player sitting on the ground
+    if player_y > 555: idleTimer += 1/FPS
+    else:idleTimer = 0 
+    if idleTimer > 5:
+        astroid = Astroid()
+        astroid.setup(HEIGHT,WIDTH)
+        astroid.y = 555
+        astroids.append(astroid)
+        idleTimer = 0 
 
     if not dead: score = round(score + scorepersecond, 2)
 
     lowFuelBeepTimer += 1
     if lowFuelBeepTimer == FPS: 
         lowFuelBeepTimer = 0
-        if fuel < 2: pygame.mixer.Sound.play(lowFuelBeep)
+        if fuel < 4 and not dead: 
+            pygame.mixer.Sound.play(lowFuelBeep)
+            screen.blit(lowFuelText.render("Low Fuel!", True, (255,50,0)), deathscreen.get_rect(center=(WIDTH/2 - 100, HEIGHT/2 )))
 
     def DrawBar(pos, size, borderC, barC, progress):
 
@@ -171,17 +185,23 @@ while True:
         keys = pygame.key.get_pressed()
 
         if keys[pygame.K_LEFT] and player_x > 0:
-            player_x -= player_speed
-            if flipped:
-                
-                flipped = False
-            sway = "sway"
-        if keys[pygame.K_RIGHT] and player_x < WIDTH - player_size:
-            player_x += player_speed
-            if not flipped:
-                flipped = True
+            player_x_v += 0.5
+            if player_x_v > 5: player_x_v = 5# terminal v
+            if flipped:flipped = False
             sway = "sway"
 
+        if keys[pygame.K_RIGHT] and player_x < WIDTH - player_size:
+            player_x_v -= 0.5
+            if player_x_v < -5: player_x_v = -5 # terminal v
+            if not flipped: flipped = True
+            sway = "sway"
+        
+        if player_x_v < 0: player_x_v += 0.1
+        else: player_x_v -= 0.1
+
+        
+        if player_x - player_x_v > 0 or player_x - player_x_v > WIDTH: player_x -= player_x_v
+        
 
         if (keys[pygame.K_UP] or keys[pygame.K_SPACE]) and player_y >= 0:
             
@@ -230,8 +250,9 @@ while True:
     screen.blit(bg, (0, 0))
     pygame.draw.rect(screen, (255, 0, 0), (WIDTH-150, 60, 100, 16))
     pygame.draw.rect(screen, (0, 255, 0), (WIDTH-150, 60, 100 * ratio, 16))
+    screen.blit(can, (WIDTH-170, 48, 10, 10))
     screen.blit(scorefont.render(str(score), True, (255,255,255)), (60, 40))
-    screen.blit(can, (can_x, can_y, can_size, can_size))
+    screen.blit(pygame.transform.rotate(can, 10), (can_x, can_y, can_size, can_size))
     screen.blit(jpstf, (player_x, player_y, player_size, player_size))
     
 
