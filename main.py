@@ -81,7 +81,7 @@ playerhb = pygame.Rect(player_x, player_y, player_size, player_size)
 player_speed = 5
 player_v = 0
 player_x_v = 0
-fall_speed = 0.1
+fall_speed = 0.15
 flipped = True
 on = "on"
 sway = "nosway"
@@ -108,13 +108,16 @@ jps = {"on":{
 # Main game loop
 clock = pygame.time.Clock()
 
-def astroidtoscore(points):
-    points = 50 - points
-    if points <= 15: points = 15
-    return points
-
 scorepersecond = round(1/FPS, 2)
 lowFuelBeepTimer = 0
+
+
+meteorwarning = pygame.transform.scale(pygame.image.load("static/warning.png"), (30, 30))
+meteor = pygame.image.load("static/meteor.png")
+meteortimer = 0 
+meteor_x = WIDTH
+meteor_y = 100
+phase = 1
 
 idleTimer = 0
 
@@ -123,6 +126,10 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+
+    
+
+
     # prevnt player sitting on the ground
     if player_y > 555: idleTimer += 1/FPS
     else:idleTimer = 0 
@@ -161,15 +168,13 @@ while True:
     
     # Spawn astroids every 15 frames
     astroidFrameCheck += 1
-    if astroidFrameCheck == astroidtoscore(round(score)):
-       
+    if astroidFrameCheck == FPS*1.5:
         if randint(1,2) == 1:
             astroid = Astroid()
             astroid.setup(HEIGHT,WIDTH)
             astroids.append(astroid)
         astroidFrameCheck = 0
-    if astroidFrameCheck >= 100:
-        astroidFrameCheck = 0
+ 
 
 
     canhb = pygame.Rect(can_x, can_y, can_size, can_size)
@@ -223,7 +228,7 @@ while True:
         player_y += player_v
         player_v += fall_speed
         if player_y <= 0:
-            player_y -= player_v -1
+            player_y -= player_v -2
             player_v = player_v/2 * -1
 
     if fuel < 0:
@@ -248,6 +253,29 @@ while True:
     ratio = fuel / 10
     
     screen.blit(bg, (0, 0))
+    meteortimer += 1
+    print(meteor_x)
+    if meteortimer == FPS*4 and phase == 1:
+        phase = 2
+        meteortimer = 0
+
+    if phase == 2:
+        if meteortimer == 1: meteor_y = randint(0,HEIGHT)
+        
+        if meteortimer > FPS*2:
+            meteor_x -= 50
+            screen.blit(meteor, (meteor_x,meteor_y))
+            print("yes")
+            if meteor_x < 0: 
+                print("it did!")
+                meteortimer = 0 
+                meteor_x = WIDTH
+                meteor_y = 100
+                phase = 1
+        else:
+            screen.blit(meteorwarning,(WIDTH - 50, meteor_y))
+    
+    if playerhb.colliderect((0, meteor_y, WIDTH, 27)) and phase == 2 and meteortimer > FPS*2: dead = True
     pygame.draw.rect(screen, (255, 0, 0), (WIDTH-150, 60, 100, 16))
     pygame.draw.rect(screen, (0, 255, 0), (WIDTH-150, 60, 100 * ratio, 16))
     screen.blit(can, (WIDTH-170, 48, 10, 10))
@@ -257,7 +285,7 @@ while True:
     
 
     for astroid in astroids:
-        astroid.x += -4
+        astroid.x += -2
         astroid.roll += 0.5
         if astroid.x + astroid.size < 0:
             astroids.remove(astroid)
